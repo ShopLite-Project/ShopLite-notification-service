@@ -14,21 +14,34 @@ describe("ShopLite notification service", () => {
     const response = await request(app).get("/notifications");
 
     expect(response.status).toBe(200);
-    expect(response.body.count).toBeGreaterThanOrEqual(1);
+    expect(response.body.meta.count).toBeGreaterThanOrEqual(1);
   });
 
-  it("dispatches a notification and emits an event", async () => {
-    const response = await request(app).post("/notifications/dispatch").send({
+  it("queues an order event notification", async () => {
+    const response = await request(app).post("/notifications/order-events").send({
       id: "ntf-002",
+      orderId: "ord-1002",
+      eventType: "order_created",
       channel: "email",
-      recipient: "shopper@example.com",
-      subject: "Order received",
-      message: "Your order has been received and is now being processed.",
-      orderId: "ord-1002"
+      customer: {
+        customerId: "cus-1002",
+        name: "Grace Hopper",
+        email: "shopper@example.com"
+      }
     });
 
     expect(response.status).toBe(202);
-    expect(response.body.id).toBe("ntf-002");
-    expect(response.body.status).toBe("sent");
+    expect(response.body.data.id).toBe("ntf-002");
+    expect(response.body.data.status).toBe("queued");
+    expect(response.body.data.sourceService).toBe("order-service");
+  });
+
+  it("dispatches a queued notification", async () => {
+    const response = await request(app).post("/notifications/ntf-001/dispatch");
+
+    expect(response.status).toBe(202);
+    expect(response.body.data.id).toBe("ntf-001");
+    expect(response.body.data.status).toBe("sent");
+    expect(response.body.data.attempts).toBeGreaterThanOrEqual(1);
   });
 });

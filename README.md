@@ -32,3 +32,23 @@ This keeps the service boundaries clear now, while staying easy to replace with 
 npm ci
 npm run dev
 ```
+
+## Kafka Notes
+
+Kafka lets this service react to events without being called directly every time.
+
+- local `docker-compose` is used to run a Kafka broker for development
+- Kafka-related files inside this service only contain consumer or producer code
+- `notification-service` can subscribe to order and inventory events and queue notifications from them
+
+Simple mental model:
+
+- Docker Compose runs Kafka
+- other services publish events
+- `notification-service` consumes those events and creates notifications
+
+For Kubernetes later:
+
+- Kafka runs as pods in the cluster
+- your services run as separate pods
+- a Kafka operator can manage brokers, topics, and some operational concerns more cleanly than manual setup
